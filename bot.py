@@ -6,19 +6,23 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.types import WebAppInfo
+from aiogram.client.default import DefaultBotProperties # Новый импорт для aiogram 3.x
 
-# Настройки (Токен берем из переменных Railway)
+# Настройки
 API_TOKEN = os.getenv("API_TOKEN")
-ADMIN_ID = 8239542728  # ЗАМЕНИ НА СВОЙ ID (цифрами)
-DB_PATH = "data/server.db"
+ADMIN_ID = 8239542728  # ЗАМЕНИ НА СВОЙ ID
+DB_PATH = "server.db" # Убрали папку data, так как Volume не используем
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=API_TOKEN, parse_mode="MarkdownV2")
+
+# ИСПРАВЛЕНО: Новый способ указания parse_mode для последних версий aiogram
+bot = Bot(
+    token=API_TOKEN, 
+    default=DefaultBotProperties(parse_mode="MarkdownV2")
+)
 dp = Dispatcher()
 
-# Инициализация БД
-if not os.path.exists("data"): os.makedirs("data")
-
+# Инициализация БД в текущей папке
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -28,7 +32,6 @@ def init_db():
 
 init_db()
 
-# Главная клавиатура
 def main_kb(user_id):
     builder = ReplyKeyboardBuilder()
     builder.button(text="📝 Подать заявку")
@@ -36,7 +39,6 @@ def main_kb(user_id):
     builder.button(text="👤 Мой аккаунт")
     builder.button(text="📢 Новости")
     builder.button(text="🚫 Жалоба")
-    # Твоя ссылка на GitHub Pages
     builder.button(text="🌐 Mini App", web_app=WebAppInfo(url="https://deemiix64-droid.github.io/metro/"))
     
     if user_id == ADMIN_ID:
@@ -46,16 +48,15 @@ def main_kb(user_id):
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("👋 Привет\! Добро пожаловать на сервер\.", reply_markup=main_kb(message.from_user.id))
+    # Добавлена буква 'r' перед строкой, чтобы не было SyntaxWarning
+    await message.answer(r"👋 Привет\! Добро пожаловать на сервер\.", reply_markup=main_kb(message.from_user.id))
 
-# Обработка данных из Mini App
 @dp.message(F.web_app_data)
 async def web_app_receive(message: types.Message):
     data = json.loads(message.web_app_data.data)
     action = data.get("action")
-    
     if action == "report":
-        text = data.get("text").replace(".", "\\.")
+        text = data.get("text").replace(".", r"\.")
         await message.answer(f"✅ Жалоба принята: _{text}_")
         await bot.send_message(ADMIN_ID, f"⚠️ *Новая жалоба:* {text}")
 
@@ -65,13 +66,13 @@ async def admin_panel(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.button(text="🔍 Проверка на читы", callback_data="check_cheats")
     builder.button(text="📥 Заявки", callback_data="view_apps")
-    builder.button(text="⚠️ Жалобы", callback_data="view_reports")
     builder.adjust(1)
-    await message.answer("🛠 *Панель управления*", reply_markup=builder.as_markup())
+    await message.answer(r"🛠 *Панель управления*", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "check_cheats")
 async def check_cheats_call(callback: types.CallbackQuery):
-    await bot.send_message(callback.message.chat.id, "📢 *РАССЫЛКА:* Игрок вызван на проверку читов\! Срочно отпишите админу\.")
+    # Добавлена буква 'r' для корректного отображения спецсимволов
+    await bot.send_message(callback.message.chat.id, r"📢 *РАССЫЛКА:* Игрок вызван на проверку читов\! Срочно отпишите админу\.")
     await callback.answer("Рассылка отправлена")
 
 if __name__ == "__main__":
