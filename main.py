@@ -9,7 +9,7 @@ from aiogram.types import WebAppInfo
 # --- КОНФИГУРАЦИЯ ---
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 8239542728  # ВАШ ЧИСЛОВОЙ ID
-APP_URL = "https://your-site.github.io" # Ссылка на ваш index.html
+APP_URL = "https://deemiix64-droid.github.io/metro/" # Ссылка на ваш index.html
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
